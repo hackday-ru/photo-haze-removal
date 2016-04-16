@@ -87,12 +87,17 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);
             }
-        } else if (resultCode == RESULT_OK && requestCode == Constants.REQUEST_GALLERY) {
-            try {
-                imageUri = data.getData();
-                displayPhotoActivity(2);
-            } catch (Exception e) {
-                Toaster.make(getApplicationContext(), R.string.error_img_not_found);
+        } else if (requestCode == Constants.REQUEST_GALLERY) {
+            if (resultCode == RESULT_OK) {
+                try {
+                    imageUri = data.getData();
+                    displayPhotoActivity(2);
+                } catch (Exception e) {
+                    Toaster.make(getApplicationContext(), R.string.error_img_not_found);
+                }
+            } else {
+                finish();
+                startActivity(getIntent());
             }
         }
     }
