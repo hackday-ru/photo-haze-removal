@@ -17,6 +17,8 @@ import com.removal.haze.photohazeremoval.lib.Constants;
 import com.removal.haze.photohazeremoval.lib.Toaster;
 import com.removal.haze.photohazeremoval.lib.UriToUrl;
 
+import uk.co.senab.photoview.PhotoViewAttacher;
+
 public class PhotoActivity extends Activity {
 
     private ImageView mainImageView;
@@ -27,6 +29,8 @@ public class PhotoActivity extends Activity {
 
     private DehazeResult downScaledDehazeResult;
     private DehazeResult originalDehazeResult;
+
+    private PhotoViewAttacher photoViewAttacher;
 
     private Uri imageUri;
 
@@ -91,6 +95,9 @@ public class PhotoActivity extends Activity {
             sourceId = savedInstanceState.getInt(Constants.KEY_SOURCE_ID);
             setImage((Bitmap) savedInstanceState.getParcelable(Constants.KEY_BITMAP));
         }
+        // Attach a PhotoViewAttacher, which takes care of all of the zooming functionality.
+        photoViewAttacher = new PhotoViewAttacher(mainImageView);
+
     }
 
 
@@ -192,6 +199,7 @@ public class PhotoActivity extends Activity {
                     }
                 });
                 setImage(bitmap);
+                photoViewAttacher.update();
             } else {
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);
                 backToMain();
