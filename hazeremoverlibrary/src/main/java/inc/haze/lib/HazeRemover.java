@@ -1,11 +1,5 @@
 package inc.haze.lib;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
-
 public class HazeRemover {
     private static final int R = 0;
     private static final int G = 1;
@@ -325,7 +319,7 @@ public class HazeRemover {
         int[] colors = new int[height * width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                colors[y * width + x] = (toColor(source[y][x][R]) << 16) +
+                colors[y * width + x] = 0xFF000000 | (toColor(source[y][x][R]) << 16) +
                         (toColor(source[y][x][G]) << 8) +
                         toColor(source[y][x][B]);
             }
@@ -399,17 +393,5 @@ public class HazeRemover {
                 toColors(radiance, height, width),
                 toColors(toHeatmap(refinedTransmission, height, width), height, width)
         );
-    }
-
-    private void saveImage(float[][][] source, String name) {
-        int height = source.length;
-        int width = source[0].length;
-        BufferedImage dehazed = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        dehazed.setRGB(0, 0, width, height, toColors(source, height, width), 0, width);
-        try {
-            ImageIO.write(dehazed, "PNG", new File(name + ".png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }

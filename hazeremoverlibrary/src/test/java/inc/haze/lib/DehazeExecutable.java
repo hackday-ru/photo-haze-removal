@@ -6,9 +6,6 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import javafx.scene.image.Image;
-import javafx.scene.image.WritableImage;
-
 /**
  * Created by nikita on 16.04.16.
  */

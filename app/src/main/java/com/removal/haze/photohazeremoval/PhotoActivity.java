@@ -18,6 +18,8 @@ import com.removal.haze.photohazeremoval.lib.Constants;
 import com.removal.haze.photohazeremoval.lib.Toaster;
 import com.removal.haze.photohazeremoval.lib.UriToUrl;
 
+import inc.haze.lib.DehazeResult;
+import inc.haze.lib.HazeRemover;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
 public class PhotoActivity extends Activity {
@@ -28,8 +30,10 @@ public class PhotoActivity extends Activity {
     private ImageButton dehazedImageButton;
     private ImageButton depthMapImageButton;
 
-    private DehazeResult downScaledDehazeResult;
-    private DehazeResult originalDehazeResult;
+    private ImageDehazeResult downScaledDehazeResult;
+    private ImageDehazeResult originalDehazeResult;
+
+    private final HazeRemover hazeRemover = new HazeRemover();
 
     private ProgressBar dehazedProgressBar;
     private ProgressBar depthMapProgressBar;
@@ -66,7 +70,8 @@ public class PhotoActivity extends Activity {
                 depthMap.setPixel(x, y, Color.argb(A, (int) (1.2 * R), G, B));
             }
         }
-        return new DehazeResult(src, dehazed, depthMap);
+        //return new DehazeResult(src, dehazed, depthMap);
+        return null;
     }
 
     private Bitmap downScale(Bitmap bitmap, int wantedWidth) {
@@ -182,39 +187,46 @@ public class PhotoActivity extends Activity {
             }
         }
 
+        private ImageDehazeResult dehaze(Bitmap src) {
+            int[] pixels = new int[src.getWidth() * src.getHeight()];
+            src.getPixels(pixels, 0, 0, 0, 0, src.getWidth(), src.getHeight());
+            return new ImageDehazeResult(hazeRemover.dehaze(pixels, src.getHeight(), src.getWidth()));
+        }
+
         @Override
         protected void onPostExecute(final Bitmap bitmap) {
             if (bitmap != null) {
                 //toolbox.setVisibility(View.VISIBLE);
                 Bitmap downScaledImage = downScale(bitmap, 300);
-                downScaledDehazeResult = getDehazeResult(downScaledImage);
+                downScaledDehazeResult = dehaze(downScaledImage);
+
                 setImage(bitmap);
                 photoViewAttacher.update();
 
-                originalImageButton.setImageBitmap(downScaledDehazeResult.getOriginal());
-                dehazedImageButton.setImageBitmap(downScaledDehazeResult.getDehazed());
-                depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepthMap());
+                originalImageButton.setImageBitmap(downScaledDehazeResult.getSource());
+                dehazedImageButton.setImageBitmap(downScaledDehazeResult.getResult());
+                depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepth());
 
-                originalDehazeResult = getDehazeResult(bitmap);
+                originalDehazeResult = dehaze(bitmap);
 
                 originalImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        setImage(originalDehazeResult.getOriginal());
+                        setImage(originalDehazeResult.getSource());
                     }
                 });
 
                 dehazedImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        setImage(originalDehazeResult.getDehazed());
+                        setImage(originalDehazeResult.getResult());
                     }
                 });
 
                 depthMapImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        setImage(originalDehazeResult.getDepthMap());
+                        setImage(originalDehazeResult.getDepth());
                     }
                 });
 
