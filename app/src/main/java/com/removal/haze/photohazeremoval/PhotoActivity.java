@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
@@ -23,6 +24,9 @@ public class PhotoActivity extends Activity {
     private ImageButton originalImageButton;
     private ImageButton dehazedImageButton;
     private ImageButton depthMapImageButton;
+
+    private DehazeResult downScaledDehazeResult;
+    private DehazeResult originalDehazeResult;
 
     private Uri imageUri;
 
@@ -122,11 +126,6 @@ public class PhotoActivity extends Activity {
         try {
             if (bitmap != null) {
                 mainImageView.setImageBitmap(bitmap);
-                Bitmap downScaledImage = downScale(bitmap, 300);
-                DehazeResult result = getDehazeResult(downScaledImage);
-                originalImageButton.setImageBitmap(result.getOriginal());
-                dehazedImageButton.setImageBitmap(result.getHazeRemoved());
-                depthMapImageButton.setImageBitmap(result.getDepthMap());
             } else {
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);
                 backToMain();
@@ -165,9 +164,33 @@ public class PhotoActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(Bitmap bitmap) {
+        protected void onPostExecute(final Bitmap bitmap) {
             if (bitmap != null) {
                 //toolbox.setVisibility(View.VISIBLE);
+                originalDehazeResult = getDehazeResult(bitmap);
+                Bitmap downScaledImage = downScale(bitmap, 300);
+                downScaledDehazeResult = getDehazeResult(downScaledImage);
+                originalImageButton.setImageBitmap(downScaledDehazeResult.getOriginal());
+                originalImageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        setImage(originalDehazeResult.getOriginal());
+                    }
+                });
+                dehazedImageButton.setImageBitmap(downScaledDehazeResult.getDehazed());
+                dehazedImageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        setImage(originalDehazeResult.getDehazed());
+                    }
+                });
+                depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepthMap());
+                depthMapImageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        setImage(originalDehazeResult.getDepthMap());
+                    }
+                });
                 setImage(bitmap);
             } else {
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);

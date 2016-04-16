@@ -10,39 +10,95 @@
     tools:context="com.removal.haze.photohazeremoval.PhotoActivity">
 
     <ImageView
+        android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/imageView"
-        android:contentDescription="@string/main_image"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentEnd="true"
+        android:contentDescription="@string/main_image" />
 
     <LinearLayout
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/imageView"
-        android:layout_centerHorizontal="true">
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal">
 
-        <ImageButton
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/originalImageButton"
-            android:contentDescription="@string/original_image"
-            android:clickable="true" />
+            android:clickable="true">
 
-        <ImageButton
+            <ImageButton
+                android:id="@+id/originalImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:contentDescription="@string/original_image" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="top"
+                android:clickable="false"
+                android:singleLine="true"
+                android:text="@string/original_label"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/dehazedImageButton"
-            android:contentDescription="@string/dehazed_image"
-            android:clickable="true" />
+            android:clickable="true">
 
-        <ImageButton
+            <ImageButton
+                android:id="@+id/dehazedImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:contentDescription="@string/dehazed_image" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="top"
+                android:clickable="false"
+                android:singleLine="true"
+                android:text="@string/dehazed_label"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+        <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/depthMapImageButton"
-            android:contentDescription="@string/depth_map_image"
-            android:clickable="true" />
+            android:clickable="true">
+
+            <ImageButton
+                android:id="@+id/depthMapImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:contentDescription="@string/depth_map_image" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="top"
+                android:clickable="false"
+                android:singleLine="true"
+                android:text="@string/depth_map_label"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+
     </LinearLayout>
 
 </RelativeLayout>

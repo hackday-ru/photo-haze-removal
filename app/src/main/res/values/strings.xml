@@ -66,4 +66,7 @@
     <string name="original_image">Original image</string>
     <string name="dehazed_image">Dehazed image</string>
     <string name="depth_map_image">Depth map image</string>
+    <string name="original_label">Original</string>
+    <string name="dehazed_label">Dehazed</string>
+    <string name="depth_map_label">Depth map</string>
 </resources>

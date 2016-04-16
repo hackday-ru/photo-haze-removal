@@ -20,7 +20,7 @@ public class DehazeResult {
         return original;
     }
 
-    public Bitmap getHazeRemoved() {
+    public Bitmap getDehazed() {
         return hazeRemoved;
     }
 
