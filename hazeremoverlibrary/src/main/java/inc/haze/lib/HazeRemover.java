@@ -1,12 +1,8 @@
 package inc.haze.lib;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
-
 public class HazeRemover {
+    private static final float TRANSMISSION_THRESHOLD = 0.2f;
+    private static final int MAX_ATMOSPHERE = 220;
     private static final int R = 0;
     private static final int G = 1;
     private static final int B = 2;
@@ -15,8 +11,6 @@ public class HazeRemover {
     private static final int GUIDED_FILTER_WINDOW_RADIUS = 40;
     private static final float OMEGA = 0.95f;
     private static final float EPS = 1e-3f;
-    public static final float TRANSMISSION_THRESHOLD = 0.2f;
-    public static final int MAX_ATMOSPHERE = 220;
 
     private float[][] channelMin(float[][][] source) {
         int height = source.length;
@@ -30,57 +24,47 @@ public class HazeRemover {
         return mins;
     }
 
-    float[][] getDarkChannel(float[][] source, int windowRadius) {
+    private float[][] getDarkChannel(float[][] source, int windowRadius) {
         int height = source.length;
         int width = source[0].length;
         float[][] rowMins = new float[height][width];
 
-        float[] queue = new float[Math.max(height, width)];
+        FloatMinQueue queue = new FloatMinQueue(Math.max(height, width));
         for (int y = 0; y < height; ++y) {
-            int head = 0, tail = 0;
+            queue.clear();
             for (int x = 0; x < windowRadius; ++x) {
                 float darkness = source[y][x];
-                while (tail > head && queue[tail - 1] > darkness)
-                    tail--;
-                queue[tail++] = darkness;
+                queue.push(darkness);
             }
             for (int x = 0; x < width; ++x) {
                 if (x - windowRadius > 0) {
                     float obsolete = source[y][x - windowRadius - 1];
-                    if (tail > head && queue[head] == obsolete)
-                        head++;
+                    queue.pop(obsolete);
                 }
                 if (x + windowRadius < width) {
                     float darkness = source[y][x + windowRadius];
-                    while (tail > head && queue[tail - 1] > darkness)
-                        tail--;
-                    queue[tail++] = darkness;
+                    queue.push(darkness);
                 }
-                rowMins[y][x] = queue[head];
+                rowMins[y][x] = queue.min();
             }
         }
         float[][] result = new float[height][width];
         for (int x = 0; x < width; ++x) {
-            int head = 0, tail = 0;
+            queue.clear();
             for (int y = 0; y < windowRadius; ++y) {
                 float darkness = rowMins[y][x];
-                while (tail > head && queue[tail - 1] > darkness)
-                    tail--;
-                queue[tail++] = darkness;
+                queue.push(darkness);
             }
             for (int y = 0; y < height; ++y) {
                 if (y - windowRadius > 0) {
                     float obsolete = rowMins[y - windowRadius - 1][x];
-                    if (tail > head && queue[head] == obsolete)
-                        head++;
+                    queue.pop(obsolete);
                 }
                 if (y + windowRadius < height) {
                     float darkness = rowMins[y + windowRadius][x];
-                    while (tail > head && queue[tail - 1] > darkness)
-                        tail--;
-                    queue[tail++] = darkness;
+                    queue.push(darkness);
                 }
-                result[y][x] = queue[head];
+                result[y][x] = queue.min();
             }
         }
         return result;
@@ -129,17 +113,15 @@ public class HazeRemover {
     private float[][] mean(float[][] source, int windowRadius) {
         int height = source.length;
         int width = source[0].length;
-        float[][] rowsSum = new float[height][width];
+        float[][] buf = new float[height][width];
         for (int y = 0; y < height; ++y) {
-            rowsSum[y][0] = source[y][0];
+            buf[y][0] = source[y][0];
             for (int x = 1; x < width; ++x)
-                rowsSum[y][x] = rowsSum[y][x - 1] + source[y][x];
+                buf[y][x] = buf[y][x - 1] + source[y][x];
         }
-        float[][] windowSum = new float[height][width];
-        System.arraycopy(rowsSum[0], 0, windowSum[0], 0, width);
         for (int y = 1; y < height; ++y) {
             for (int x = 0; x < width; ++x)
-                windowSum[y][x] = windowSum[y - 1][x] + rowsSum[y][x];
+                buf[y][x] = buf[y - 1][x] + buf[y][x];
         }
         float[][] result = new float[height][width];
         for (int y = 0; y < height; ++y) {
@@ -148,13 +130,13 @@ public class HazeRemover {
                 int rightInclusively = Math.min(width - 1, x + windowRadius);
                 int topExclusively = Math.max(-1, y - windowRadius - 1);
                 int bottomInclusively = Math.min(height - 1, y + windowRadius);
-                float sum = windowSum[bottomInclusively][rightInclusively];
+                float sum = buf[bottomInclusively][rightInclusively];
                 if (leftExclusively >= 0)
-                    sum -= windowSum[bottomInclusively][leftExclusively];
+                    sum -= buf[bottomInclusively][leftExclusively];
                 if (topExclusively >= 0)
-                    sum -= windowSum[topExclusively][rightInclusively];
+                    sum -= buf[topExclusively][rightInclusively];
                 if (leftExclusively >= 0 && topExclusively >= 0)
-                    sum += windowSum[topExclusively][leftExclusively];
+                    sum += buf[topExclusively][leftExclusively];
                 int windowSize = (bottomInclusively - topExclusively) *
                         (rightInclusively - leftExclusively);
                 result[y][x] = sum / windowSize;
@@ -214,21 +196,6 @@ public class HazeRemover {
         return result;
     }
 
-    private float[][] product(float[][] a, float[][] b) {
-        int M = a.length;
-        int N = a[0].length;
-        int P = b[0].length;
-        float[][] result = new float[M][P];
-        for (int i = 0; i < M; ++i) {
-            for (int j = 0; j < N; ++j) {
-                for (int k = 0; k < P; ++k) {
-                    result[i][k] += a[i][j] * b[j][k];
-                }
-            }
-        }
-        return result;
-    }
-
     private float[][] inv3x3(float[][] m) { // todo optimize for symmetric matrix
         // computes the inverse of a matrix m
         float det = m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2]) -
@@ -278,28 +245,30 @@ public class HazeRemover {
 
         int height = guidance.length;
         int width = guidance[0].length;
-        float[][][] a = new float[height][width][CHANNELS];
+        float[][][] a = new float[CHANNELS][height][width];
+        float[][] sigma = new float[3][3];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                float[][] sigma = {
-                        {var[R][R][y][x] + eps, var[R][G][y][x], var[R][B][y][x]},
-                        {var[R][G][y][x], var[G][G][y][x] + eps, var[G][B][y][x]},
-                        {var[R][B][y][x], var[G][B][y][x], var[B][B][y][x] + eps}
-                };
-                float[][] cov = {{productCovariance[R][y][x], productCovariance[G][y][x], productCovariance[B][y][x]}};
-                a[y][x] = product(cov, inv3x3(sigma))[0];
+                for (int i = 0; i < CHANNELS; ++i)
+                    for (int j = i; j < CHANNELS; ++j)
+                        sigma[i][j] = sigma[j][i] = var[i][j][y][x] + (i == j ? eps : 0);
+                float[][] invSigma = inv3x3(sigma);
+                float covR = productCovariance[R][y][x];
+                float covG = productCovariance[G][y][x];
+                float covB = productCovariance[B][y][x];
+                for (int i = 0; i < CHANNELS; ++i)
+                    a[i][y][x] = covR * invSigma[0][i] + covG * invSigma[1][i] + covB * invSigma[2][i];
             }
         }
-        float[][][] rotatedA = rotateDimensions(a);
         float[][] b = subtract(subtract(subtract(
                 guidedMean,
-                perElProduct(rotatedA[R], guidanceMeans[R])),
-                perElProduct(rotatedA[G], guidanceMeans[G])),
-                perElProduct(rotatedA[B], guidanceMeans[B]));
+                perElProduct(a[R], guidanceMeans[R])),
+                perElProduct(a[G], guidanceMeans[G])),
+                perElProduct(a[B], guidanceMeans[B]));
         return sum(sum(sum(
-                perElProduct(mean(rotatedA[R], windowRadius), rotatedGuidance[R]),
-                perElProduct(mean(rotatedA[G], windowRadius), rotatedGuidance[G])),
-                perElProduct(mean(rotatedA[B], windowRadius), rotatedGuidance[B])),
+                perElProduct(mean(a[R], windowRadius), rotatedGuidance[R]),
+                perElProduct(mean(a[G], windowRadius), rotatedGuidance[G])),
+                perElProduct(mean(a[B], windowRadius), rotatedGuidance[B])),
                 mean(b, windowRadius));
     }
 
@@ -401,15 +370,33 @@ public class HazeRemover {
         );
     }
 
-    private void saveImage(float[][][] source, String name) {
-        int height = source.length;
-        int width = source[0].length;
-        BufferedImage dehazed = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        dehazed.setRGB(0, 0, width, height, toColors(source, height, width), 0, width);
-        try {
-            ImageIO.write(dehazed, "PNG", new File(name + ".png"));
-        } catch (IOException e) {
-            e.printStackTrace();
+    private static class FloatMinQueue {
+        // http://e-maxx.ru/algo/stacks_for_minima
+
+        private final float[] queue;
+        private int head, tail;
+
+        FloatMinQueue(int maxSize) {
+            this.queue = new float[maxSize];
+        }
+
+        void push(float value) {
+            while (tail > head && queue[tail - 1] > value)
+                tail--;
+            queue[tail++] = value;
+        }
+
+        void pop(float value) {
+            if (tail > head && queue[head] == value)
+                head++;
+        }
+
+        float min() {
+            return queue[head];
+        }
+
+        void clear() {
+            head = tail = 0;
         }
     }
 }
