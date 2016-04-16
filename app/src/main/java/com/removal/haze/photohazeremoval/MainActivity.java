@@ -22,20 +22,20 @@ import java.lang.reflect.Method;
 public class MainActivity extends Activity {
 
     private Animation animation;
-    private RelativeLayout top_holder;
-    private RelativeLayout bottom_holder;
-    private RelativeLayout step_number;
+    private RelativeLayout topHolder;
+    private RelativeLayout bottomHolder;
+    private RelativeLayout stepNumber;
     private Uri imageUri;
-    private boolean click_status = true;
+    private boolean clickStatus = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        top_holder = (RelativeLayout) findViewById(R.id.top_holder);
-        bottom_holder = (RelativeLayout) findViewById(R.id.bottom_holder);
-        step_number = (RelativeLayout) findViewById(R.id.step_number);
+        topHolder = (RelativeLayout) findViewById(R.id.top_holder);
+        bottomHolder = (RelativeLayout) findViewById(R.id.bottom_holder);
+        stepNumber = (RelativeLayout) findViewById(R.id.step_number);
     }
 
     @Override
@@ -61,7 +61,9 @@ public class MainActivity extends Activity {
 
     @SuppressWarnings("unused")
     private void displayGallery() {
-        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) && !Environment.getExternalStorageState().equals(Environment.MEDIA_CHECKING)) {
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) &&
+                !Environment.getExternalStorageState().equals(Environment.MEDIA_CHECKING)
+                ) {
             Intent intent = new Intent();
             intent.setType("image/jpeg");
             intent.setAction(Intent.ACTION_GET_CONTENT);
@@ -79,6 +81,8 @@ public class MainActivity extends Activity {
                     displayPhotoActivity(1);
                 } else {
                     UriToUrl.deleteUri(getApplicationContext(), imageUri);
+                    finish();
+                    startActivity(getIntent());
                 }
             } catch (Exception e) {
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);
@@ -118,17 +122,17 @@ public class MainActivity extends Activity {
     }
 
     private void flyOut(final String method_name) {
-        if (click_status) {
-            click_status = false;
+        if (clickStatus) {
+            clickStatus = false;
 
             animation = AnimationUtils.loadAnimation(this, R.anim.step_number_back);
-            step_number.startAnimation(animation);
+            stepNumber.startAnimation(animation);
 
             animation = AnimationUtils.loadAnimation(this, R.anim.holder_top_back);
-            top_holder.startAnimation(animation);
+            topHolder.startAnimation(animation);
 
             animation = AnimationUtils.loadAnimation(this, R.anim.holder_bottom_back);
-            bottom_holder.startAnimation(animation);
+            bottomHolder.startAnimation(animation);
 
             animation.setAnimationListener(new AnimationListener() {
                 @Override
@@ -154,7 +158,7 @@ public class MainActivity extends Activity {
         } else {
             try {
                 Method method = getClass().getDeclaredMethod(method_name);
-                method.invoke(this, new Object[]{});
+                method.invoke(this);
             } catch (Exception e) {
             }
         }
@@ -167,16 +171,16 @@ public class MainActivity extends Activity {
     }
 
     private void flyIn() {
-        click_status = true;
+        clickStatus = true;
 
         animation = AnimationUtils.loadAnimation(this, R.anim.holder_top);
-        top_holder.startAnimation(animation);
+        topHolder.startAnimation(animation);
 
         animation = AnimationUtils.loadAnimation(this, R.anim.holder_bottom);
-        bottom_holder.startAnimation(animation);
+        bottomHolder.startAnimation(animation);
 
         animation = AnimationUtils.loadAnimation(this, R.anim.step_number);
-        step_number.startAnimation(animation);
+        stepNumber.startAnimation(animation);
     }
 
 }
