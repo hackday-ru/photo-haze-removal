@@ -71,6 +71,13 @@
                 android:textColor="#000000"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/dehazedProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:indeterminate="true" />
         </RelativeLayout>
 
         <RelativeLayout
@@ -96,6 +103,13 @@
                 android:textColor="#000000"
                 android:textSize="18sp"
                 android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/depthMapProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:indeterminate="true" />
         </RelativeLayout>
 
 

@@ -11,6 +11,7 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import com.removal.haze.photohazeremoval.bitmap.BitmapLoader;
 import com.removal.haze.photohazeremoval.lib.Constants;
@@ -29,6 +30,9 @@ public class PhotoActivity extends Activity {
 
     private DehazeResult downScaledDehazeResult;
     private DehazeResult originalDehazeResult;
+
+    private ProgressBar dehazedProgressBar;
+    private ProgressBar depthMapProgressBar;
 
     private PhotoViewAttacher photoViewAttacher;
 
@@ -79,7 +83,10 @@ public class PhotoActivity extends Activity {
         mainImageView = (ImageView) findViewById(R.id.imageView);
         originalImageButton = (ImageButton) findViewById(R.id.originalImageButton);
         dehazedImageButton = (ImageButton) findViewById(R.id.dehazedImageButton);
+        dehazedProgressBar = (ProgressBar) findViewById(R.id.dehazedProgressBar);
+
         depthMapImageButton = (ImageButton) findViewById(R.id.depthMapImageButton);
+        depthMapProgressBar = (ProgressBar) findViewById(R.id.depthMapProgressBar);
 
         if (savedInstanceState == null) {
             sourceId = getIntent().getExtras().getInt(Constants.EXTRA_KEY_IMAGE_SOURCE);
@@ -144,6 +151,11 @@ public class PhotoActivity extends Activity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        backToMain();
+    }
+
     private class BitmapWorkerTask extends AsyncTask<Void, Void, Bitmap> {
         DisplayMetrics metrics;
         BitmapLoader bitmapLoader;
@@ -174,32 +186,41 @@ public class PhotoActivity extends Activity {
         protected void onPostExecute(final Bitmap bitmap) {
             if (bitmap != null) {
                 //toolbox.setVisibility(View.VISIBLE);
-                originalDehazeResult = getDehazeResult(bitmap);
                 Bitmap downScaledImage = downScale(bitmap, 300);
                 downScaledDehazeResult = getDehazeResult(downScaledImage);
+                setImage(bitmap);
+                photoViewAttacher.update();
+
                 originalImageButton.setImageBitmap(downScaledDehazeResult.getOriginal());
+                dehazedImageButton.setImageBitmap(downScaledDehazeResult.getDehazed());
+                depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepthMap());
+
+                originalDehazeResult = getDehazeResult(bitmap);
+
                 originalImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         setImage(originalDehazeResult.getOriginal());
                     }
                 });
-                dehazedImageButton.setImageBitmap(downScaledDehazeResult.getDehazed());
+
                 dehazedImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         setImage(originalDehazeResult.getDehazed());
                     }
                 });
-                depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepthMap());
+
                 depthMapImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         setImage(originalDehazeResult.getDepthMap());
                     }
                 });
-                setImage(bitmap);
-                photoViewAttacher.update();
+
+                dehazedProgressBar.setVisibility(View.INVISIBLE);
+                depthMapProgressBar.setVisibility(View.INVISIBLE);
+
             } else {
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);
                 backToMain();
