@@ -99,6 +99,7 @@ public class PhotoActivity extends Activity {
             try {
                 loadImage();
             } catch (Exception e) {
+                e.printStackTrace();
                 Toaster.make(getApplicationContext(), R.string.error_img_not_found);
                 backToMain();
             }
@@ -140,6 +141,32 @@ public class PhotoActivity extends Activity {
         finish();
     }
 
+    private class ResultOfProcessing {
+        private ImageDehazeResult originalResult;
+        private ImageDehazeResult downScaledResult;
+
+        public ResultOfProcessing(ImageDehazeResult originalResult, ImageDehazeResult downScaledResult) {
+            this.setOriginalResult(originalResult);
+            this.setDownScaledResult(downScaledResult);
+        }
+
+        public ImageDehazeResult getOriginalResult() {
+            return originalResult;
+        }
+
+        public void setOriginalResult(ImageDehazeResult originalResult) {
+            this.originalResult = originalResult;
+        }
+
+        public ImageDehazeResult getDownScaledResult() {
+            return downScaledResult;
+        }
+
+        public void setDownScaledResult(ImageDehazeResult downScaledResult) {
+            this.downScaledResult = downScaledResult;
+        }
+    }
+
     private void setImage(Bitmap bitmap) {
         //hideLoading();
         try {
@@ -161,7 +188,7 @@ public class PhotoActivity extends Activity {
         backToMain();
     }
 
-    private class BitmapWorkerTask extends AsyncTask<Void, Void, Bitmap> {
+    private class BitmapWorkerTask extends AsyncTask<Void, Void, ResultOfProcessing> {
         DisplayMetrics metrics;
         BitmapLoader bitmapLoader;
 
@@ -179,35 +206,49 @@ public class PhotoActivity extends Activity {
 
         // Decode image in background.
         @Override
-        protected Bitmap doInBackground(Void... arg0) {
+        protected ResultOfProcessing doInBackground(Void... arg0) {
             try {
-                return bitmapLoader.load(getApplicationContext(), new int[]{metrics.widthPixels, metrics.heightPixels}, imageUrl);
+                Bitmap bitmap = bitmapLoader.load(getApplicationContext(), new int[]{metrics.widthPixels, metrics.heightPixels}, imageUrl);
+                if (bitmap != null) {
+                    //toolbox.setVisibility(View.VISIBLE);
+                    Bitmap downScaledImage = downScale(bitmap, 300);
+                    try {
+                        downScaledDehazeResult = dehaze(downScaledImage);
+                        originalDehazeResult = dehaze(bitmap);
+                        return new ResultOfProcessing(originalDehazeResult, downScaledDehazeResult);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Toaster.make(getApplicationContext(), R.string.error_img_not_found);
+                    backToMain();
+                }
             } catch (Exception e) {
+                e.printStackTrace();
                 return null;
             }
+            return null;
         }
 
         private ImageDehazeResult dehaze(Bitmap src) {
             int[] pixels = new int[src.getWidth() * src.getHeight()];
-            src.getPixels(pixels, 0, 0, 0, 0, src.getWidth(), src.getHeight());
+            src.getPixels(pixels, 0, src.getWidth(), 0, 0, src.getWidth(), src.getHeight());
             return new ImageDehazeResult(hazeRemover.dehaze(pixels, src.getHeight(), src.getWidth()));
         }
 
         @Override
-        protected void onPostExecute(final Bitmap bitmap) {
-            if (bitmap != null) {
-                //toolbox.setVisibility(View.VISIBLE);
-                Bitmap downScaledImage = downScale(bitmap, 300);
-                downScaledDehazeResult = dehaze(downScaledImage);
-
-                setImage(bitmap);
+        protected void onPostExecute(final ResultOfProcessing res) {
+            if (res != null) {
+                setImage(res.originalResult.getSource());
                 photoViewAttacher.update();
+
+                downScaledDehazeResult = res.getDownScaledResult();
+                originalDehazeResult = res.getOriginalResult();
 
                 originalImageButton.setImageBitmap(downScaledDehazeResult.getSource());
                 dehazedImageButton.setImageBitmap(downScaledDehazeResult.getResult());
                 depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepth());
 
-                originalDehazeResult = dehaze(bitmap);
 
                 originalImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -232,10 +273,6 @@ public class PhotoActivity extends Activity {
 
                 dehazedProgressBar.setVisibility(View.INVISIBLE);
                 depthMapProgressBar.setVisibility(View.INVISIBLE);
-
-            } else {
-                Toaster.make(getApplicationContext(), R.string.error_img_not_found);
-                backToMain();
             }
         }
     }
