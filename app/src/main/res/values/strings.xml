@@ -69,4 +69,5 @@
     <string name="original_label">Original</string>
     <string name="dehazed_label">Dehazed</string>
     <string name="depth_map_label">Depth map</string>
+    <string name="savebutton">saveButton</string>
 </resources>
