@@ -1,5 +1,6 @@
 package com.removal.haze.photohazeremoval;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -23,6 +24,7 @@ import java.math.BigInteger;
 import java.util.Random;
 
 import inc.haze.lib.DehazeResult;
+import inc.haze.lib.GuidedFilter;
 import inc.haze.lib.HazeRemover;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
@@ -38,7 +40,7 @@ public class PhotoActivity extends AppCompatActivity {
     private ImageDehazeResult downScaledDehazeResult;
     private ImageDehazeResult originalDehazeResult;
 
-    private final HazeRemover hazeRemover = new HazeRemover();
+    private final HazeRemover hazeRemover = new HazeRemover(new GuidedFilter(), 1500, 1500);
 
     private ProgressBar dehazedProgressBar;
     private ProgressBar depthMapProgressBar;
@@ -54,6 +56,8 @@ public class PhotoActivity extends AppCompatActivity {
     private int sourceId;
 
     private static final int DOWNSCALE_WIDTH = 1024;
+
+    private ProgressDialog progressDialog;
 
     Bitmap originalImage;
     Bitmap buttonIcon;
@@ -285,6 +289,11 @@ public class PhotoActivity extends AppCompatActivity {
             originalImageButton.setImageBitmap(buttonIcon);
             dehazedImageButton.setImageBitmap(buttonIcon);
             depthMapImageButton.setImageBitmap(buttonIcon);
+         /*   try {
+                progressDialog = ProgressDialog.show(getBaseContext(), "Loading", "");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }*/
             new BitmapWorkerTask().execute(originalImage, buttonIcon);
             super.onPostExecute(bitmap);
         }
@@ -342,7 +351,6 @@ public class PhotoActivity extends AppCompatActivity {
                 downScaledDehazeResult = res.getDownScaledResult();
                 originalDehazeResult = res.getOriginalResult();
 
-                originalImageButton.setImageBitmap(downScaledDehazeResult.getSource());
                 dehazedImageButton.setImageBitmap(downScaledDehazeResult.getResult());
                 depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepth());
 
@@ -350,7 +358,7 @@ public class PhotoActivity extends AppCompatActivity {
                 originalImageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        setImage(originalDehazeResult.getSource());
+                        setImage(originalImage);
                     }
                 });
 
@@ -370,6 +378,7 @@ public class PhotoActivity extends AppCompatActivity {
 
                 dehazedProgressBar.setVisibility(View.INVISIBLE);
                 depthMapProgressBar.setVisibility(View.INVISIBLE);
+                //progressDialog.hide();
 
                 saveImageButton.setVisibility(View.VISIBLE);
                 saveImageButton.setOnClickListener(new View.OnClickListener() {
@@ -411,7 +420,7 @@ public class PhotoActivity extends AppCompatActivity {
                             }
                         };//.execute();
                         saveImageButton.setVisibility(View.INVISIBLE);*/
-                        saveToFile(res.originalResult.getSource());
+                        //saveToFile(res.originalResult.getSource());
                     }
                 });
             }
