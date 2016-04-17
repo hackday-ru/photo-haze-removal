@@ -35,9 +35,7 @@ public class GuidedFilter {
         return result;
     }
 
-    private float[][] mean(float[][] source) {
-        int height = source.length;
-        int width = source[0].length;
+    private float[][] mean(float[][] source, int height, int width) {
         float[][] buf = new float[height][width];
         for (int y = 0; y < height; ++y) {
             buf[y][0] = source[y][0];
@@ -85,9 +83,7 @@ public class GuidedFilter {
         return result;
     }
 
-    private float[][] perElProduct(float[][] a, float[][] b) {
-        int height = a.length;
-        int width = a[0].length;
+    private float[][] perElProduct(float[][] a, float[][] b, int height, int width) {
         float[][] result = new float[height][width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -97,9 +93,7 @@ public class GuidedFilter {
         return result;
     }
 
-    private float[][] subtract(float[][] a, float[][] b) {
-        int height = a.length;
-        int width = a[0].length;
+    private float[][] subtract(float[][] a, float[][] b, int height, int width) {
         float[][] result = new float[height][width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -109,9 +103,7 @@ public class GuidedFilter {
         return result;
     }
 
-    private float[][] sum(float[][] a, float[][] b) {
-        int height = a.length;
-        int width = a[0].length;
+    private float[][] sum(float[][] a, float[][] b, int height, int width) {
         float[][] result = new float[height][width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -147,24 +139,25 @@ public class GuidedFilter {
         float[][][] guidanceMeans = new float[CHANNELS][][];
         float[][][] rotatedGuidance = rotateDimensions(guidance);
         for (int c = 0; c < CHANNELS; ++c) {
-            guidanceMeans[c] = mean(rotatedGuidance[c]);
+            guidanceMeans[c] = mean(rotatedGuidance[c], height, width);
         }
-        float[][] guidedMean = mean(guided);
+        float[][] guidedMean = mean(guided, height, width);
         float[][][] productMeans = new float[CHANNELS][][];
         for (int c = 0; c < CHANNELS; ++c) {
-            productMeans[c] = mean(perElProduct(rotatedGuidance[c], guided));
+            productMeans[c] = mean(perElProduct(rotatedGuidance[c], guided, height, width), height, width);
         }
         float[][][] productCovariance = new float[CHANNELS][][];
         for (int c = 0; c < CHANNELS; ++c) {
-            productCovariance[c] = subtract(productMeans[c], perElProduct(guidanceMeans[c], guidedMean));
+            productCovariance[c] = subtract(productMeans[c], perElProduct(guidanceMeans[c], guidedMean, height, width), height, width);
         }
 
         float[][][][] var = new float[CHANNELS][CHANNELS][][];
         for (int i = 0; i < CHANNELS; ++i) {
             for (int j = i; j < CHANNELS; ++j) {
                 var[i][j] = subtract(
-                        mean(perElProduct(rotatedGuidance[i], rotatedGuidance[j])),
-                        perElProduct(guidanceMeans[i], guidanceMeans[j])
+                        mean(perElProduct(rotatedGuidance[i], rotatedGuidance[j], height, width), height, width),
+                        perElProduct(guidanceMeans[i], guidanceMeans[j], height, width),
+                        height, width
                 );
             }
         }
@@ -186,13 +179,13 @@ public class GuidedFilter {
         }
         float[][] b = subtract(subtract(subtract(
                 guidedMean,
-                perElProduct(a[R], guidanceMeans[R])),
-                perElProduct(a[G], guidanceMeans[G])),
-                perElProduct(a[B], guidanceMeans[B]));
+                perElProduct(a[R], guidanceMeans[R], height, width), height, width),
+                perElProduct(a[G], guidanceMeans[G], height, width), height, width),
+                perElProduct(a[B], guidanceMeans[B], height, width), height, width);
         return sum(sum(sum(
-                perElProduct(mean(a[R]), rotatedGuidance[R]),
-                perElProduct(mean(a[G]), rotatedGuidance[G])),
-                perElProduct(mean(a[B]), rotatedGuidance[B])),
-                mean(b));
+                perElProduct(mean(a[R], height, width), rotatedGuidance[R], height, width),
+                perElProduct(mean(a[G], height, width), rotatedGuidance[G], height, width), height, width),
+                perElProduct(mean(a[B], height, width), rotatedGuidance[B], height, width), height, width),
+                mean(b, height, width), height, width);
     }
 }
