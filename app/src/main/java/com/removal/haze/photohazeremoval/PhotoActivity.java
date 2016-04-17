@@ -1,12 +1,13 @@
 package com.removal.haze.photohazeremoval;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
+import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageButton;
@@ -22,11 +23,12 @@ import inc.haze.lib.DehazeResult;
 import inc.haze.lib.HazeRemover;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
-public class PhotoActivity extends Activity {
+public class PhotoActivity extends AppCompatActivity {
 
     private ImageView mainImageView;
 
     private ImageButton originalImageButton;
+    private int buttonWidth;
     private ImageButton dehazedImageButton;
     private ImageButton depthMapImageButton;
 
@@ -43,8 +45,11 @@ public class PhotoActivity extends Activity {
     private Uri imageUri;
 
     private String imageUrl;
+    private ImageButton saveImageButton;
 
     private int sourceId;
+
+    private static final int DOWNSCALE_WIDTH = 1024;
 
     private DehazeResult getDehazeResult(Bitmap src) {
 
@@ -79,6 +84,26 @@ public class PhotoActivity extends Activity {
         return Bitmap.createScaledBitmap(bitmap, wantedWidth, (int) (bitmap.getHeight() * scale), true);
     }
 
+    private Bitmap getButtonBitmap(Bitmap src) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int expectedWidth = buttonWidth;
+        float scale = (float) buttonWidth / src.getWidth();
+        int expectedHeight = (int) (src.getHeight() * scale);
+        if (5 * expectedHeight > metrics.heightPixels) {
+            expectedHeight = metrics.heightPixels / 5;
+            scale = (float) expectedHeight / src.getHeight();
+            expectedWidth = (int) (buttonWidth * scale);
+        }
+        return Bitmap.createScaledBitmap(src, expectedWidth, expectedHeight, true);
+    }
+
+    private int getDisplayWidth() {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        return metrics.widthPixels;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,6 +117,18 @@ public class PhotoActivity extends Activity {
 
         depthMapImageButton = (ImageButton) findViewById(R.id.depthMapImageButton);
         depthMapProgressBar = (ProgressBar) findViewById(R.id.depthMapProgressBar);
+        saveImageButton = (ImageButton) findViewById(R.id.saveImageButton);
+        saveImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                        .addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType(DocumentsContract.Document.MIME_TYPE_DIR)
+                        .putExtra(Intent.EXTRA_TITLE, "ololo");
+
+                startActivityForResult(intent, 1);
+            }
+        });
 
         if (savedInstanceState == null) {
             sourceId = getIntent().getExtras().getInt(Constants.EXTRA_KEY_IMAGE_SOURCE);
@@ -115,6 +152,9 @@ public class PhotoActivity extends Activity {
 
 
     private void loadImage() throws Exception {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        buttonWidth = metrics.widthPixels / 3;
         BitmapWorkerTask bitMapWorker = new BitmapWorkerTask();
         bitMapWorker.execute();
     }
@@ -198,23 +238,22 @@ public class PhotoActivity extends Activity {
             bitmapLoader = new BitmapLoader();
         }
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            //toolbox.setVisibility(View.GONE);
-        }
-
         // Decode image in background.
         @Override
         protected ResultOfProcessing doInBackground(Void... arg0) {
             try {
                 Bitmap bitmap = bitmapLoader.load(getApplicationContext(), new int[]{metrics.widthPixels, metrics.heightPixels}, imageUrl);
                 if (bitmap != null) {
-                    //toolbox.setVisibility(View.VISIBLE);
-                    Bitmap downScaledImage = downScale(bitmap, 300);
+                    Bitmap buttonIcon = getButtonBitmap(bitmap);
+                    Bitmap downScaledImage;
+                    if (bitmap.getWidth() < DOWNSCALE_WIDTH) {
+                        downScaledImage = bitmap;
+                    } else {
+                        downScaledImage = downScale(bitmap, DOWNSCALE_WIDTH);
+                    }
                     try {
-                        downScaledDehazeResult = dehaze(downScaledImage);
-                        originalDehazeResult = dehaze(bitmap);
+                        downScaledDehazeResult = dehaze(buttonIcon);
+                        originalDehazeResult = dehaze(downScaledImage);
                         return new ResultOfProcessing(originalDehazeResult, downScaledDehazeResult);
                     } catch (Exception e) {
                         e.printStackTrace();
