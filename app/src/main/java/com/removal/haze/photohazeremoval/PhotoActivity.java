@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.DocumentsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -18,6 +17,10 @@ import com.removal.haze.photohazeremoval.bitmap.BitmapLoader;
 import com.removal.haze.photohazeremoval.lib.Constants;
 import com.removal.haze.photohazeremoval.lib.Toaster;
 import com.removal.haze.photohazeremoval.lib.UriToUrl;
+
+import java.io.File;
+import java.math.BigInteger;
+import java.util.Random;
 
 import inc.haze.lib.DehazeResult;
 import inc.haze.lib.HazeRemover;
@@ -47,9 +50,13 @@ public class PhotoActivity extends AppCompatActivity {
     private String imageUrl;
     private ImageButton saveImageButton;
 
+    private Random random = new Random();
     private int sourceId;
 
     private static final int DOWNSCALE_WIDTH = 1024;
+
+    Bitmap originalImage;
+    Bitmap buttonIcon;
 
     private DehazeResult getDehazeResult(Bitmap src) {
 
@@ -84,6 +91,16 @@ public class PhotoActivity extends AppCompatActivity {
         return Bitmap.createScaledBitmap(bitmap, wantedWidth, (int) (bitmap.getHeight() * scale), true);
     }
 
+    private class BitMapPair {
+        Bitmap original;
+        Bitmap scaled;
+
+        public BitMapPair(Bitmap original, Bitmap scaled) {
+            this.original = original;
+            this.scaled = scaled;
+        }
+    }
+
     private Bitmap getButtonBitmap(Bitmap src) {
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -104,6 +121,10 @@ public class PhotoActivity extends AppCompatActivity {
         return metrics.widthPixels;
     }
 
+    public String nextFileName() {
+        return new BigInteger(130, random).toString(32);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -118,17 +139,7 @@ public class PhotoActivity extends AppCompatActivity {
         depthMapImageButton = (ImageButton) findViewById(R.id.depthMapImageButton);
         depthMapProgressBar = (ProgressBar) findViewById(R.id.depthMapProgressBar);
         saveImageButton = (ImageButton) findViewById(R.id.saveImageButton);
-        saveImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
-                        .addCategory(Intent.CATEGORY_OPENABLE)
-                        .setType(DocumentsContract.Document.MIME_TYPE_DIR)
-                        .putExtra(Intent.EXTRA_TITLE, "ololo");
-
-                startActivityForResult(intent, 1);
-            }
-        });
+        saveImageButton.setVisibility(View.INVISIBLE);
 
         if (savedInstanceState == null) {
             sourceId = getIntent().getExtras().getInt(Constants.EXTRA_KEY_IMAGE_SOURCE);
@@ -155,29 +166,17 @@ public class PhotoActivity extends AppCompatActivity {
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
         buttonWidth = metrics.widthPixels / 3;
-        BitmapWorkerTask bitMapWorker = new BitmapWorkerTask();
-        bitMapWorker.execute();
+
+        BitmapLoaderTask bitMapLoader = new BitmapLoaderTask();
+        bitMapLoader.execute();
+        //BitmapWorkerTask bitMapWorker = new BitmapWorkerTask();
+        //bitMapWorker.execute();
     }
 
     private void backToMain() {
-        //recycleBitmap();
-
-        /*if (loading_dialog.isShowing()) {
-            hideLoading();
-        }*/
-
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(intent);
         overridePendingTransition(0, 0);
-
-        /*if (source_id == 1) {
-            UriToUrl.deleteUri(getApplicationContext(), imageUri);
-        }
-
-        if (save_status || source_id == 1) {
-            UriToUrl.sendBroadcast(getApplicationContext(), outputURL);
-        }*/
-
         finish();
     }
 
@@ -223,12 +222,75 @@ public class PhotoActivity extends AppCompatActivity {
         }
     }
 
+    void saveToFile(Bitmap bitmap) {
+        File file = new File(".");
+        Uri theUri = Uri.fromFile(file).buildUpon().scheme("file.new").build();
+        Intent theIntent = new Intent(Intent.ACTION_PICK);
+        theIntent.setData(theUri);
+        theIntent.putExtra(Intent.EXTRA_TITLE, "A Custom Title"); //optional
+        theIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS); //optional
+        try {
+            startActivityForResult(theIntent, 123);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case 123: {
+                if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                    String theFilePath = data.getData().getPath();
+                }
+                break;
+            }
+        }
+    }
+
     @Override
     public void onBackPressed() {
         backToMain();
     }
 
-    private class BitmapWorkerTask extends AsyncTask<Void, Void, ResultOfProcessing> {
+    private class BitmapLoaderTask extends AsyncTask<Void, Void, Bitmap> {
+        DisplayMetrics metrics;
+        BitmapLoader bitmapLoader;
+
+        public BitmapLoaderTask() {
+            metrics = getResources().getDisplayMetrics();
+            imageUrl = UriToUrl.get(getApplicationContext(), imageUri);
+            bitmapLoader = new BitmapLoader();
+        }
+
+        @Override
+        protected Bitmap doInBackground(Void... voids) {
+            try {
+                return bitmapLoader.load(getApplicationContext(), new int[]{metrics.widthPixels, metrics.heightPixels}, imageUrl);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            buttonIcon = getButtonBitmap(bitmap);
+            if (bitmap.getWidth() < DOWNSCALE_WIDTH) {
+                originalImage = bitmap;
+            } else {
+                originalImage = downScale(bitmap, DOWNSCALE_WIDTH);
+            }
+            setImage(originalImage);
+            originalImageButton.setImageBitmap(buttonIcon);
+            dehazedImageButton.setImageBitmap(buttonIcon);
+            depthMapImageButton.setImageBitmap(buttonIcon);
+            new BitmapWorkerTask().execute(originalImage, buttonIcon);
+            super.onPostExecute(bitmap);
+        }
+    }
+
+    private class BitmapWorkerTask extends AsyncTask<Bitmap, Void, ResultOfProcessing> {
         DisplayMetrics metrics;
         BitmapLoader bitmapLoader;
 
@@ -238,22 +300,21 @@ public class PhotoActivity extends AppCompatActivity {
             bitmapLoader = new BitmapLoader();
         }
 
+        @Override
+        protected void onPreExecute() {
+            photoViewAttacher.update();
+            super.onPreExecute();
+        }
+
         // Decode image in background.
         @Override
-        protected ResultOfProcessing doInBackground(Void... arg0) {
+        protected ResultOfProcessing doInBackground(Bitmap... arg0) {
             try {
-                Bitmap bitmap = bitmapLoader.load(getApplicationContext(), new int[]{metrics.widthPixels, metrics.heightPixels}, imageUrl);
+                Bitmap bitmap = arg0[0];
                 if (bitmap != null) {
-                    Bitmap buttonIcon = getButtonBitmap(bitmap);
-                    Bitmap downScaledImage;
-                    if (bitmap.getWidth() < DOWNSCALE_WIDTH) {
-                        downScaledImage = bitmap;
-                    } else {
-                        downScaledImage = downScale(bitmap, DOWNSCALE_WIDTH);
-                    }
                     try {
                         downScaledDehazeResult = dehaze(buttonIcon);
-                        originalDehazeResult = dehaze(downScaledImage);
+                        originalDehazeResult = dehaze(arg0[1]);
                         return new ResultOfProcessing(originalDehazeResult, downScaledDehazeResult);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -278,9 +339,6 @@ public class PhotoActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(final ResultOfProcessing res) {
             if (res != null) {
-                setImage(res.originalResult.getSource());
-                photoViewAttacher.update();
-
                 downScaledDehazeResult = res.getDownScaledResult();
                 originalDehazeResult = res.getOriginalResult();
 
@@ -312,6 +370,50 @@ public class PhotoActivity extends AppCompatActivity {
 
                 dehazedProgressBar.setVisibility(View.INVISIBLE);
                 depthMapProgressBar.setVisibility(View.INVISIBLE);
+
+                saveImageButton.setVisibility(View.VISIBLE);
+                saveImageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                       /* try {
+                            sendBroadcast(new Intent(
+                                    Intent.ACTION_MEDIA_MOUNTED,
+                                    Uri.parse("file://" + Environment.getExternalStorageDirectory())));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        new AsyncTask<Void, Void, Integer>() {
+                            @Override
+                            protected Integer doInBackground(Void... voids) {
+                                try {
+                                    String sourceUrl = MediaStore.Images.Media.insertImage(getContentResolver(), res.originalResult.getSource(), "source1", "");
+                                    String resultUrl = MediaStore.Images.Media.insertImage(getContentResolver(), res.originalResult.getResult(), "result1", "");
+                                    String depthUrl = MediaStore.Images.Media.insertImage(getContentResolver(), res.originalResult.getDepth(), "depth1", "");
+                                    if (sourceUrl == null || resultUrl == null || depthUrl == null) {
+                                        return 1;
+                                    } else {
+                                        return 0;
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                return -1;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Integer res) {
+                                if (res == 0) {
+                                    Toaster.make(getApplicationContext(), "Files were saved to gallery");
+                                } else {
+                                    Toaster.make(getApplicationContext(), "Failed to save images");
+                                }
+                                super.onPostExecute(res);
+                            }
+                        };//.execute();
+                        saveImageButton.setVisibility(View.INVISIBLE);*/
+                        saveToFile(res.originalResult.getSource());
+                    }
+                });
             }
         }
     }
