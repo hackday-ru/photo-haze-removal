@@ -107,9 +107,9 @@ public class HazeRemover {
         int[] result = new int[height * width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                int channel = toChannel(depth[y][x] * 255);
+                int channel = toChannel(depth[y][x] * 0xFF);
                 // todo make red! coz red goaz fasta!!!
-                result[y * width + x] = 0xFF000000 | (channel << 16) | (channel << 8) | channel;
+                result[y * width + x] = 0xFFFF0000 | (channel << 8);
             }
         }
         return result;
