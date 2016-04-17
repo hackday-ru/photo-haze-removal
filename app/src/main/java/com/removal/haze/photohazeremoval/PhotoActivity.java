@@ -1,29 +1,32 @@
 package com.removal.haze.photohazeremoval;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.os.Environment;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.removal.haze.photohazeremoval.bitmap.BitmapLoader;
+import com.removal.haze.photohazeremoval.bitmap.BitmapWriter;
 import com.removal.haze.photohazeremoval.lib.Constants;
 import com.removal.haze.photohazeremoval.lib.Toaster;
 import com.removal.haze.photohazeremoval.lib.UriToUrl;
 
+import java.io.File;
 import java.util.Random;
 
 import inc.haze.lib.GuidedFilter;
 import inc.haze.lib.HazeRemover;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
-public class PhotoActivity extends AppCompatActivity {
+public class PhotoActivity extends Activity {
 
     private ImageView mainImageView;
 
@@ -128,6 +131,27 @@ public class PhotoActivity extends AppCompatActivity {
         startActivity(intent);
         overridePendingTransition(0, 0);
         finish();
+    }
+
+    private void saveImages() {
+
+        int counter = 0;
+        String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1, imageUrl.lastIndexOf("."));
+
+        File path = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+
+        File file = new File(path, "PhotoHazeRemoval");
+
+        try {
+            file.mkdirs();
+        } catch (Exception e) {
+        }
+
+        new BitmapWriter(new File(path, "PhotoHazeRemoval/"+fileName + "_original.jpg"), originalImage).execute();
+        new BitmapWriter(new File(path, "PhotoHazeRemoval/"+fileName + "_dehazed.jpg"), originalDehazeResult.getResult()).execute();
+        new BitmapWriter(new File(path, "PhotoHazeRemoval/"+fileName + "_depth.jpg"), originalDehazeResult.getDepth()).execute();
+        Toaster.make(this, "Images were saved");
     }
 
     private class ResultOfProcessing {
@@ -302,6 +326,13 @@ public class PhotoActivity extends AppCompatActivity {
 
                 progressDialog.dismiss();
                 saveImageButton.setVisibility(View.VISIBLE);
+                saveImageButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        saveImages();
+                        saveImageButton.setVisibility(View.INVISIBLE);
+                    }
+                });
             }
         }
     }

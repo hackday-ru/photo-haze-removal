@@ -31,6 +31,7 @@ public class BitmapWriter extends AsyncTask<Void, Void, Boolean> {
 			fos.close();
 			return true;
 		} catch (Exception e) {
+			e.printStackTrace();
 			return false;
 		}
 	}
