@@ -25,16 +25,24 @@
         android:orientation="horizontal">
 
         <RelativeLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true">
+            android:clickable="true"
+            android:layout_weight="1"
+            android:padding="1dp">
 
             <ImageButton
                 android:id="@+id/originalImageButton"
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:clickable="true"
-                android:contentDescription="@string/original_image" />
+                android:contentDescription="@string/original_image"
+                android:padding="1dp"
+                android:paddingLeft="1dp"
+                android:paddingTop="1dp"
+                android:paddingRight="1dp"
+                android:paddingBottom="1dp"
+                android:cropToPadding="true" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -50,16 +58,24 @@
         </RelativeLayout>
 
         <RelativeLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true">
+            android:clickable="true"
+            android:layout_weight="1"
+            android:padding="1dp">
 
             <ImageButton
                 android:id="@+id/dehazedImageButton"
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:clickable="true"
-                android:contentDescription="@string/dehazed_image" />
+                android:contentDescription="@string/dehazed_image"
+                android:padding="0dp"
+                android:cropToPadding="true"
+                android:paddingLeft="0dp"
+                android:paddingTop="0dp"
+                android:paddingRight="0dp"
+                android:paddingBottom="1dp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -82,16 +98,24 @@
         </RelativeLayout>
 
         <RelativeLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true">
+            android:clickable="true"
+            android:layout_weight="1"
+            android:padding="1dp">
 
             <ImageButton
                 android:id="@+id/depthMapImageButton"
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:clickable="true"
-                android:contentDescription="@string/depth_map_image" />
+                android:contentDescription="@string/depth_map_image"
+                android:padding="0dp"
+                android:paddingLeft="0dp"
+                android:paddingTop="0dp"
+                android:paddingRight="0dp"
+                android:paddingBottom="0dp"
+                android:cropToPadding="true" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -127,7 +151,7 @@
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/imageButton"
+            android:id="@+id/saveImageButton"
             android:contentDescription="@string/savebutton"
             android:src="@drawable/ic_save"
             android:clickable="true" />

@@ -7,6 +7,7 @@ public class Constants {
 
     public static final String EXTRA_KEY_IMAGE_SOURCE = "e1";
     public static final String EXTRA_KEY_EFFECT = "e2";
+    public static final String CHOOSE_DIR = "e3";
 
     public static final String KEY_BITMAP = "a1";
     public static final String KEY_URL = "a2";
