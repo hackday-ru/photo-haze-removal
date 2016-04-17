@@ -1,10 +1,9 @@
 package inc.haze.lib;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-
-import javax.imageio.ImageIO;
 
 /**
  * Created by nikita on 16.04.16.
@@ -15,7 +14,10 @@ public class DehazeExecutable {
         int height = image.getHeight();
         int width = image.getWidth();
         int[] pixels = image.getRGB(0, 0, width, height, null, 0, width);
-        DehazeResult dehaze = new HazeRemover().dehaze(pixels, height, width);
+        long start = System.currentTimeMillis();
+        DehazeResult dehaze = new HazeRemover(new GuidedFilter(), height, width).dehaze(pixels, height, width);
+        long end = System.currentTimeMillis();
+        System.out.println(end - start);
 
         BufferedImage dehazed = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         dehazed.setRGB(0, 0, width, height, dehaze.getResult(), 0, width);
