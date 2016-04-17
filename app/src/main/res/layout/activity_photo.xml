@@ -22,128 +22,114 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/imageView"
         android:layout_centerHorizontal="true"
-        android:orientation="horizontal"
-        android:baselineAligned="false">
+        android:baselineAligned="false"
+        android:orientation="horizontal">
 
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true"
             android:layout_weight="1"
+            android:clickable="true"
             android:padding="1dp">
+
+            <TextView
+                android:id="@+id/originalTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:text="@string/original_label"
+                android:textAlignment="center"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
 
             <ImageButton
                 android:id="@+id/originalImageButton"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_below="@id/originalTextView"
                 android:clickable="true"
                 android:contentDescription="@string/original_image"
-                android:padding="1dp"
-                android:paddingLeft="1dp"
-                android:paddingTop="1dp"
-                android:paddingRight="1dp"
-                android:paddingBottom="1dp"
-                android:cropToPadding="true" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:layout_gravity="top"
-                android:clickable="false"
-                android:singleLine="true"
-                android:text="@string/original_label"
-                android:textColor="#000000"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:cropToPadding="true"
+                android:text="@string/original_label" />
         </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true"
             android:layout_weight="1"
+            android:clickable="true"
             android:padding="1dp">
+
+            <TextView
+                android:id="@+id/dehazedTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:text="@string/dehazed_label"
+                android:textAlignment="center"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
 
             <ImageButton
                 android:id="@+id/dehazedImageButton"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_below="@id/dehazedTextView"
                 android:clickable="true"
                 android:contentDescription="@string/dehazed_image"
-                android:padding="0dp"
-                android:cropToPadding="true"
-                android:paddingLeft="0dp"
-                android:paddingTop="0dp"
-                android:paddingRight="0dp"
-                android:paddingBottom="1dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:layout_gravity="top"
-                android:clickable="false"
-                android:singleLine="true"
-                android:text="@string/dehazed_label"
-                android:textColor="#000000"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:cropToPadding="true" />
 
         </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:clickable="true"
             android:layout_weight="1"
+            android:clickable="true"
             android:padding="1dp">
+
+            <TextView
+                android:id="@+id/depthTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:text="@string/depth_map_label"
+                android:textAlignment="center"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
 
             <ImageButton
                 android:id="@+id/depthMapImageButton"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_below="@id/depthTextView"
                 android:clickable="true"
                 android:contentDescription="@string/depth_map_image"
-                android:padding="0dp"
-                android:paddingLeft="0dp"
-                android:paddingTop="0dp"
-                android:paddingRight="0dp"
-                android:paddingBottom="0dp"
-                android:cropToPadding="true" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:layout_gravity="top"
-                android:clickable="false"
-                android:singleLine="true"
-                android:text="@string/depth_map_label"
-                android:textColor="#000000"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
+                android:cropToPadding="true"
+                android:text="@string/depth_map_label" />
         </RelativeLayout>
 
 
     </LinearLayout>
 
     <LinearLayout
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:gravity="right">
+        android:gravity="right"
+        android:orientation="horizontal">
 
         <ImageButton
+            android:id="@+id/saveImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/saveImageButton"
+            android:clickable="true"
             android:contentDescription="@string/savebutton"
-            android:src="@drawable/ic_save"
-            android:clickable="true" />
+            android:src="@drawable/ic_save" />
     </LinearLayout>
 
 </RelativeLayout>

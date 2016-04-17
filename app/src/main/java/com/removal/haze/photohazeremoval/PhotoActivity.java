@@ -59,6 +59,10 @@ public class PhotoActivity extends AppCompatActivity {
         return Bitmap.createScaledBitmap(bitmap, wantedWidth, (int) (bitmap.getHeight() * scale), true);
     }
 
+    private void setButtonImage(ImageButton button, Bitmap bitmap) {
+        button.setImageBitmap(bitmap);
+    }
+
     private Bitmap getButtonBitmap(Bitmap src) {
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -206,9 +210,10 @@ public class PhotoActivity extends AppCompatActivity {
                 setImage(originalImage);
                 photoViewAttacher.update();
 
-                originalImageButton.setImageBitmap(buttonIcon);
-                dehazedImageButton.setImageBitmap(buttonIcon);
-                depthMapImageButton.setImageBitmap(buttonIcon);
+                setButtonImage(originalImageButton, buttonIcon);
+                setButtonImage(dehazedImageButton, buttonIcon);
+                setButtonImage(depthMapImageButton, buttonIcon);
+
                 progressDialog = ProgressDialog.show(PhotoActivity.this,
                         "Please wait", "Haze removal algorithm is in progress");
 
@@ -270,8 +275,8 @@ public class PhotoActivity extends AppCompatActivity {
                 downScaledDehazeResult = res.getDownScaledResult();
                 originalDehazeResult = res.getOriginalResult();
 
-                dehazedImageButton.setImageBitmap(downScaledDehazeResult.getResult());
-                depthMapImageButton.setImageBitmap(downScaledDehazeResult.getDepth());
+                setButtonImage(dehazedImageButton, downScaledDehazeResult.getResult());
+                setButtonImage(depthMapImageButton, downScaledDehazeResult.getDepth());
 
 
                 originalImageButton.setOnClickListener(new View.OnClickListener() {
