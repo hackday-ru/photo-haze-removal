@@ -3,7 +3,6 @@ package com.removal.haze.photohazeremoval;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,11 +18,8 @@ import com.removal.haze.photohazeremoval.lib.Constants;
 import com.removal.haze.photohazeremoval.lib.Toaster;
 import com.removal.haze.photohazeremoval.lib.UriToUrl;
 
-import java.io.File;
-import java.math.BigInteger;
 import java.util.Random;
 
-import inc.haze.lib.DehazeResult;
 import inc.haze.lib.GuidedFilter;
 import inc.haze.lib.HazeRemover;
 import uk.co.senab.photoview.PhotoViewAttacher;
@@ -62,47 +58,9 @@ public class PhotoActivity extends AppCompatActivity {
     Bitmap originalImage;
     Bitmap buttonIcon;
 
-    private DehazeResult getDehazeResult(Bitmap src) {
-
-        Bitmap dehazed = Bitmap.createBitmap(src.getWidth(), src.getHeight(), src.getConfig());
-        for (int x = 0; x < src.getWidth(); ++x) {
-            for (int y = 0; y < src.getHeight(); ++y) {
-                int pixel = src.getPixel(x, y);
-                int A = Color.alpha(pixel);
-                int R = Color.red(pixel);
-                int G = Color.green(pixel);
-                int B = Color.blue(pixel);
-                dehazed.setPixel(x, y, Color.argb(A, R, (int) (1.2 * G), B));
-            }
-        }
-        Bitmap depthMap = Bitmap.createBitmap(src.getWidth(), src.getHeight(), src.getConfig());
-        for (int x = 0; x < src.getWidth(); ++x) {
-            for (int y = 0; y < src.getHeight(); ++y) {
-                int pixel = src.getPixel(x, y);
-                int A = Color.alpha(pixel);
-                int R = Color.red(pixel);
-                int G = Color.green(pixel);
-                int B = Color.blue(pixel);
-                depthMap.setPixel(x, y, Color.argb(A, (int) (1.2 * R), G, B));
-            }
-        }
-        //return new DehazeResult(src, dehazed, depthMap);
-        return null;
-    }
-
     private Bitmap downScale(Bitmap bitmap, int wantedWidth) {
         float scale = (float) wantedWidth / bitmap.getWidth();
         return Bitmap.createScaledBitmap(bitmap, wantedWidth, (int) (bitmap.getHeight() * scale), true);
-    }
-
-    private class BitMapPair {
-        Bitmap original;
-        Bitmap scaled;
-
-        public BitMapPair(Bitmap original, Bitmap scaled) {
-            this.original = original;
-            this.scaled = scaled;
-        }
     }
 
     private Bitmap getButtonBitmap(Bitmap src) {
@@ -117,16 +75,6 @@ public class PhotoActivity extends AppCompatActivity {
             expectedWidth = (int) (buttonWidth * scale);
         }
         return Bitmap.createScaledBitmap(src, expectedWidth, expectedHeight, true);
-    }
-
-    private int getDisplayWidth() {
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        return metrics.widthPixels;
-    }
-
-    public String nextFileName() {
-        return new BigInteger(130, random).toString(32);
     }
 
     @Override
@@ -223,32 +171,6 @@ public class PhotoActivity extends AppCompatActivity {
             Toaster.make(getApplicationContext(), e.getMessage());
             e.printStackTrace();
             backToMain();
-        }
-    }
-
-    void saveToFile(Bitmap bitmap) {
-        File file = new File(".");
-        Uri theUri = Uri.fromFile(file).buildUpon().scheme("file.new").build();
-        Intent theIntent = new Intent(Intent.ACTION_PICK);
-        theIntent.setData(theUri);
-        theIntent.putExtra(Intent.EXTRA_TITLE, "A Custom Title"); //optional
-        theIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS); //optional
-        try {
-            startActivityForResult(theIntent, 123);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case 123: {
-                if (resultCode == RESULT_OK && data != null && data.getData() != null) {
-                    String theFilePath = data.getData().getPath();
-                }
-                break;
-            }
         }
     }
 
@@ -381,48 +303,6 @@ public class PhotoActivity extends AppCompatActivity {
                 //progressDialog.hide();
 
                 saveImageButton.setVisibility(View.VISIBLE);
-                saveImageButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                       /* try {
-                            sendBroadcast(new Intent(
-                                    Intent.ACTION_MEDIA_MOUNTED,
-                                    Uri.parse("file://" + Environment.getExternalStorageDirectory())));
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        new AsyncTask<Void, Void, Integer>() {
-                            @Override
-                            protected Integer doInBackground(Void... voids) {
-                                try {
-                                    String sourceUrl = MediaStore.Images.Media.insertImage(getContentResolver(), res.originalResult.getSource(), "source1", "");
-                                    String resultUrl = MediaStore.Images.Media.insertImage(getContentResolver(), res.originalResult.getResult(), "result1", "");
-                                    String depthUrl = MediaStore.Images.Media.insertImage(getContentResolver(), res.originalResult.getDepth(), "depth1", "");
-                                    if (sourceUrl == null || resultUrl == null || depthUrl == null) {
-                                        return 1;
-                                    } else {
-                                        return 0;
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                                return -1;
-                            }
-
-                            @Override
-                            protected void onPostExecute(Integer res) {
-                                if (res == 0) {
-                                    Toaster.make(getApplicationContext(), "Files were saved to gallery");
-                                } else {
-                                    Toaster.make(getApplicationContext(), "Failed to save images");
-                                }
-                                super.onPostExecute(res);
-                            }
-                        };//.execute();
-                        saveImageButton.setVisibility(View.INVISIBLE);*/
-                        //saveToFile(res.originalResult.getSource());
-                    }
-                });
             }
         }
     }
