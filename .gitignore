@@ -40,3 +40,6 @@ proguard/
 
 # Android Studio captures folder
 captures/
+
+#not apk
+~app/build/outputs/apk/app-debug.apk
