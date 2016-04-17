@@ -15,7 +15,7 @@ public class DehazeExecutable {
         int width = image.getWidth();
         int[] pixels = image.getRGB(0, 0, width, height, null, 0, width);
         long start = System.currentTimeMillis();
-        DehazeResult dehaze = new HazeRemover().dehaze(pixels, height, width);
+        DehazeResult dehaze = new HazeRemover(height, width).dehaze(pixels, height, width);
         long end = System.currentTimeMillis();
         System.out.println(end - start);
 

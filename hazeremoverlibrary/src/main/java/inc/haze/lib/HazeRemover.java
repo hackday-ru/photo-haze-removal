@@ -12,69 +12,80 @@ public class HazeRemover {
     private static final float OMEGA = 0.95f;
     private static final float EPS = 1e-3f;
 
-    private float[][] channelMin(float[][][] source) {
-        int height = source.length;
-        int width = source[0].length;
-        float[][] mins = new float[height][width];
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                mins[y][x] = Math.min(source[y][x][R], Math.min(source[y][x][G], source[y][x][B]));
-            }
-        }
-        return mins;
+    private final float[][] fBuffer1;
+    private final float[][] fBuffer2;
+
+
+    public HazeRemover(int maxHeight, int maxWidth) {
+        this.fBuffer1 = new float[maxHeight][maxWidth];
+        this.fBuffer2 = new float[maxHeight][maxWidth];
+//        this.iBuffer = new int[maxHeight][maxWidth];
     }
 
-    private float[][] getDarkChannel(float[][] source, int windowRadius) {
-        int height = source.length;
-        int width = source[0].length;
-        float[][] rowMins = new float[height][width];
 
+    private static int getRed(int color) {
+        return (color >>> 16) & 0xFF;
+    }
+
+    private static int getGreen(int color) {
+        return (color >> 8) & 0xFF;
+    }
+
+    private static int getBlue(int color) {
+        return color & 0xFF;
+    }
+
+    private static int minChannel(int color) {
+        return Math.min(getRed(color), Math.min(getGreen(color), getBlue(color)));
+    }
+
+    private static int maxChannel(int color) {
+        return Math.max(getRed(color), Math.max(getGreen(color), getBlue(color)));
+    }
+
+    private static void calcDarkChannel(float[][] srcDest, float[][] buffer, int height, int width) {
         FloatMinQueue queue = new FloatMinQueue(Math.max(height, width));
         for (int y = 0; y < height; ++y) {
             queue.clear();
-            for (int x = 0; x < windowRadius; ++x) {
-                float darkness = source[y][x];
+            for (int x = 0; x < DARK_CHANNEL_WINDOW_RADIUS; ++x) {
+                float darkness = srcDest[y][x];
                 queue.push(darkness);
             }
             for (int x = 0; x < width; ++x) {
-                if (x - windowRadius > 0) {
-                    float obsolete = source[y][x - windowRadius - 1];
+                if (x - DARK_CHANNEL_WINDOW_RADIUS > 0) {
+                    float obsolete = srcDest[y][x - DARK_CHANNEL_WINDOW_RADIUS - 1];
                     queue.pop(obsolete);
                 }
-                if (x + windowRadius < width) {
-                    float darkness = source[y][x + windowRadius];
+                if (x + DARK_CHANNEL_WINDOW_RADIUS < width) {
+                    float darkness = srcDest[y][x + DARK_CHANNEL_WINDOW_RADIUS];
                     queue.push(darkness);
                 }
-                rowMins[y][x] = queue.min();
+                buffer[y][x] = queue.min();
             }
         }
-        float[][] result = new float[height][width];
         for (int x = 0; x < width; ++x) {
             queue.clear();
-            for (int y = 0; y < windowRadius; ++y) {
-                float darkness = rowMins[y][x];
+            for (int y = 0; y < DARK_CHANNEL_WINDOW_RADIUS; ++y) {
+                float darkness = buffer[y][x];
                 queue.push(darkness);
             }
             for (int y = 0; y < height; ++y) {
-                if (y - windowRadius > 0) {
-                    float obsolete = rowMins[y - windowRadius - 1][x];
+                if (y - DARK_CHANNEL_WINDOW_RADIUS > 0) {
+                    float obsolete = buffer[y - DARK_CHANNEL_WINDOW_RADIUS - 1][x];
                     queue.pop(obsolete);
                 }
-                if (y + windowRadius < height) {
-                    float darkness = rowMins[y + windowRadius][x];
+                if (y + DARK_CHANNEL_WINDOW_RADIUS < height) {
+                    float darkness = buffer[y + DARK_CHANNEL_WINDOW_RADIUS][x];
                     queue.push(darkness);
                 }
-                result[y][x] = queue.min();
+                srcDest[y][x] = queue.min();
             }
         }
-        return result;
     }
 
-    private float[] getAtmosphere(float[][][] source, float[][] darkChannel) {
+    private int getAtmosphere(int[] source, int height, int width, float[][] darkChannel) {
         float max = Float.MIN_VALUE; // todo replace with 5 percentile
         int maxX = -1, maxY = -1;
-        int height = source.length;
-        int width = source[0].length;
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 if (darkChannel[y][x] > max) {
@@ -84,33 +95,28 @@ public class HazeRemover {
                 }
             }
         }
-        return source[maxY][maxX];
+        return source[maxY * width + maxX];
     }
 
-    private float[][] getTransmission(float[][][] source, float[] atmosphere, float omega, int windowRadius) {
-        int height = source.length;
-        int width = source[0].length;
-
-        float[][] darkChannelSource = new float[height][width];
+    private static void getTransmission(int[] source, float[][] destination, float[][] buffer, int height, int width, int atmosphere) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 float darkness = Float.MAX_VALUE;
-                for (int c = 0; c < CHANNELS; ++c)
-                    darkness = Math.min(darkness, source[y][x][c] / atmosphere[c]);
-                darkChannelSource[y][x] = darkness;
+                darkness = Math.min(darkness, (float) getRed(source[y * width + x]) / getRed(atmosphere));
+                darkness = Math.min(darkness, (float) getGreen(source[y * width + x]) / getGreen(atmosphere));
+                darkness = Math.min(darkness, (float) getBlue(source[y * width + x]) / getBlue(atmosphere));
+                destination[y][x] = darkness;
             }
         }
-        float[][] darkChannel = getDarkChannel(darkChannelSource, windowRadius);
-        float[][] result = new float[height][width];
+        calcDarkChannel(destination, buffer, height, width);
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                result[y][x] = 1 - omega * darkChannel[y][x];
+                destination[y][x] = 1 - OMEGA * destination[y][x];
             }
         }
-        return result;
     }
 
-    private float[][] mean(float[][] source, int windowRadius) {
+    private float[][] mean(float[][] source) {
         int height = source.length;
         int width = source[0].length;
         float[][] buf = new float[height][width];
@@ -126,10 +132,10 @@ public class HazeRemover {
         float[][] result = new float[height][width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                int leftExclusively = Math.max(-1, x - windowRadius - 1);
-                int rightInclusively = Math.min(width - 1, x + windowRadius);
-                int topExclusively = Math.max(-1, y - windowRadius - 1);
-                int bottomInclusively = Math.min(height - 1, y + windowRadius);
+                int leftExclusively = Math.max(-1, x - GUIDED_FILTER_WINDOW_RADIUS - 1);
+                int rightInclusively = Math.min(width - 1, x + GUIDED_FILTER_WINDOW_RADIUS);
+                int topExclusively = Math.max(-1, y - GUIDED_FILTER_WINDOW_RADIUS - 1);
+                int bottomInclusively = Math.min(height - 1, y + GUIDED_FILTER_WINDOW_RADIUS);
                 float sum = buf[bottomInclusively][rightInclusively];
                 if (leftExclusively >= 0)
                     sum -= buf[bottomInclusively][leftExclusively];
@@ -217,16 +223,16 @@ public class HazeRemover {
         return minv;
     }
 
-    private float[][] guidedFilter(float[][][] guidance, float[][] guided, int windowRadius, float eps) {
+    private float[][] guidedFilter(float[][][] guidance, float[][] guided) {
         float[][][] guidanceMeans = new float[CHANNELS][][];
         float[][][] rotatedGuidance = rotateDimensions(guidance);
         for (int c = 0; c < CHANNELS; ++c) {
-            guidanceMeans[c] = mean(rotatedGuidance[c], windowRadius);
+            guidanceMeans[c] = mean(rotatedGuidance[c]);
         }
-        float[][] guidedMean = mean(guided, windowRadius);
+        float[][] guidedMean = mean(guided);
         float[][][] productMeans = new float[CHANNELS][][];
         for (int c = 0; c < CHANNELS; ++c) {
-            productMeans[c] = mean(perElProduct(rotatedGuidance[c], guided), windowRadius);
+            productMeans[c] = mean(perElProduct(rotatedGuidance[c], guided));
         }
         float[][][] productCovariance = new float[CHANNELS][][];
         for (int c = 0; c < CHANNELS; ++c) {
@@ -237,7 +243,7 @@ public class HazeRemover {
         for (int i = 0; i < CHANNELS; ++i) {
             for (int j = i; j < CHANNELS; ++j) {
                 var[i][j] = subtract(
-                        mean(perElProduct(rotatedGuidance[i], rotatedGuidance[j]), windowRadius),
+                        mean(perElProduct(rotatedGuidance[i], rotatedGuidance[j])),
                         perElProduct(guidanceMeans[i], guidanceMeans[j])
                 );
             }
@@ -251,7 +257,7 @@ public class HazeRemover {
             for (int x = 0; x < width; ++x) {
                 for (int i = 0; i < CHANNELS; ++i)
                     for (int j = i; j < CHANNELS; ++j)
-                        sigma[i][j] = sigma[j][i] = var[i][j][y][x] + (i == j ? eps : 0);
+                        sigma[i][j] = sigma[j][i] = var[i][j][y][x] + (i == j ? EPS : 0);
                 float[][] invSigma = inv3x3(sigma);
                 float covR = productCovariance[R][y][x];
                 float covG = productCovariance[G][y][x];
@@ -266,21 +272,19 @@ public class HazeRemover {
                 perElProduct(a[G], guidanceMeans[G])),
                 perElProduct(a[B], guidanceMeans[B]));
         return sum(sum(sum(
-                perElProduct(mean(a[R], windowRadius), rotatedGuidance[R]),
-                perElProduct(mean(a[G], windowRadius), rotatedGuidance[G])),
-                perElProduct(mean(a[B], windowRadius), rotatedGuidance[B])),
-                mean(b, windowRadius));
+                perElProduct(mean(a[R]), rotatedGuidance[R]),
+                perElProduct(mean(a[G]), rotatedGuidance[G])),
+                perElProduct(mean(a[B]), rotatedGuidance[B])),
+                mean(b));
     }
 
-    private float[][][] getRadiance(float[][][] source, float[] atmosphere, float[][] transmission) {
-        int height = source.length;
-        int width = source[0].length;
+    private float[][][] getRadiance(int[] pixels, int atmosphere, float[][] transmission, int height, int width) {
         float[][][] result = new float[height][width][CHANNELS];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                for (int c = 0; c < CHANNELS; ++c) {
-                    result[y][x][c] = (source[y][x][c] - atmosphere[c]) / transmission[y][x] + atmosphere[c]; // todo min by max
-                }
+                result[y][x][0] = (getRed(pixels[y * width + x]) - getRed(atmosphere)) / transmission[y][x] + getRed(atmosphere);
+                result[y][x][1] = (getGreen(pixels[y * width + x]) - getGreen(atmosphere)) / transmission[y][x] + getGreen(atmosphere);
+                result[y][x][2] = (getBlue(pixels[y * width + x]) - getBlue(atmosphere)) / transmission[y][x] + getBlue(atmosphere);
             }
         }
         return result;
@@ -312,55 +316,40 @@ public class HazeRemover {
         return result;
     }
 
-    private float[][][] toFloats(int[] pixels, int height, int width) {
-        float[][][] source = new float[height][width][CHANNELS];
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                int color = pixels[y * width + x];
-                source[y][x][R] = ((color >>> 16) & 0xFF);
-                source[y][x][G] = ((color >>> 8) & 0xFF);
-                source[y][x][B] = (color & 0xFF);
-            }
-        }
-        return source;
-    }
-
-    private float[][][] normalize(float[][][] source) {
-        int height = source.length;
-        int width = source[0].length;
+    private float[][][] normalize(int[] pixels, int height, int width) {
         float min = Float.MAX_VALUE;
         float max = Float.MIN_VALUE;
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                min = Math.min(min, Math.min(source[y][x][R], Math.min(source[y][x][G], source[y][x][B])));
-                max = Math.max(max, Math.max(source[y][x][R], Math.max(source[y][x][G], source[y][x][B])));
+                min = Math.min(min, minChannel(pixels[y * width + x]));
+                max = Math.max(max, maxChannel(pixels[y * width + x]));
             }
         }
         float[][][] result = new float[height][width][CHANNELS];
         float length = Math.max(1, max - min);
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                result[y][x][R] = (source[y][x][R] - min) / length;
-                result[y][x][G] = (source[y][x][G] - min) / length;
-                result[y][x][B] = (source[y][x][B] - min) / length;
+                result[y][x][R] = (getRed(pixels[y * width + x]) - min) / length;
+                result[y][x][G] = (getGreen(pixels[y * width + x]) - min) / length;
+                result[y][x][B] = (getBlue(pixels[y * width + x]) - min) / length;
             }
         }
         return result;
     }
 
     public DehazeResult dehaze(int[] pixels, int height, int width) {
-        float[][][] source = toFloats(pixels, height, width);
-        float[][] darknesses = channelMin(source);
-        float[][] darkChannel = getDarkChannel(darknesses, DARK_CHANNEL_WINDOW_RADIUS);
-        float[] atmosphere = getAtmosphere(source, darkChannel);
-        for (int i = 0; i < CHANNELS; ++i)
-            atmosphere[i] = Math.min(MAX_ATMOSPHERE, atmosphere[i]); // todo remove.. may be not...
-        float[][] transmission = getTransmission(source, atmosphere, OMEGA, DARK_CHANNEL_WINDOW_RADIUS);
         for (int y = 0; y < height; ++y)
             for (int x = 0; x < width; ++x)
-                transmission[y][x] = Math.max(transmission[y][x], TRANSMISSION_THRESHOLD); // todo threshold transmission remove?
-        float[][] refinedTransmission = guidedFilter(normalize(source), transmission, GUIDED_FILTER_WINDOW_RADIUS, EPS);
-        float[][][] radiance = getRadiance(source, atmosphere, refinedTransmission);
+                fBuffer1[y][x] = minChannel(pixels[y * width + x]);
+        calcDarkChannel(fBuffer1, fBuffer2, height, width);
+        int atmosphere = getAtmosphere(pixels, height, width, fBuffer1);
+        // todo bound atmosphere
+        getTransmission(pixels, fBuffer1, fBuffer2, height, width, atmosphere);
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+                fBuffer1[y][x] = Math.max(fBuffer1[y][x], TRANSMISSION_THRESHOLD); // todo threshold transmission remove?
+        float[][] refinedTransmission = guidedFilter(normalize(pixels, height, width), fBuffer1);
+        float[][][] radiance = getRadiance(pixels, atmosphere, refinedTransmission, height, width);
         return new DehazeResult(
                 height,
                 width,
